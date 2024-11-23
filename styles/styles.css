@@ -1,0 +1,97 @@
+body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+.plot-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+svg {
+    width: 760px;
+    height: 620px;
+}
+
+#selected-list {
+    width: 100%;
+    padding: 10px;
+    list-style-type: none;
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 20px;
+}
+
+#selected-list li {
+    padding: 5px 10px;
+    margin: 0;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+    color: #333;
+}
+
+.dot {
+    cursor: pointer;
+    stroke-width: 0;
+    transition: stroke-width 0.2s ease;
+}
+
+.dot.selected {
+    stroke: black;
+    stroke-width: 3px;
+}
+
+.axis-label {
+    font-size: 20pt;
+}
+
+.axisX {
+    font-size: 30pt; /* Increased size for X-axis labels */
+}
+
+.axisY {
+    font-size: 30pt; /* Increased size for Y-axis labels */
+}
+
+.axis text {
+    font-size: 20pt; /* Increased font size for axis numbers */
+}
+
+.title {
+    font-size: 25pt;
+    font-family: sans-serif;
+    text-anchor: middle;
+    color: black;
+}
+
+.label {
+    font-size: 20pt;
+    font-family: sans-serif;
+    text-anchor: middle;
+}
+
+.bars {
+    fill-opacity: .7;
+}
+
+.legend {
+    text-anchor: start;
+    font-size: 18pt;
+    font-family: sans-serif;
+}
+
+.selected {
+    stroke: black;
+    stroke-width: 3px;
+    fill-opacity: 1;
+}
+
+.legendSelect {
+    fill-opacity: .05;
+}
