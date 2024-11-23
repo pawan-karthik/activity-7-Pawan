@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Car Data Scatter Plot</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .plot-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        svg {
+            width: 800px;
+            height: 660px;
+        }
+        #selected-list {
+            width: 100%;
+            padding: 10px;
+            list-style-type: none;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        #selected-list li {
+            padding: 5px 10px;
+            margin: 0;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+            color: #333;
+        }
+        .dot {
+            cursor: pointer;
+            stroke-width: 0;
+            transition: stroke-width 0.2s ease;
+        }
+        .dot.selected {
+            stroke: black;
+            stroke-width: 3px;
+        }
+        .axis-label {
+            font-size: 16px;
+        }
+        .title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .legend-item text {
+            font-size: 14px;
+        }
+        .legend-item {
+            cursor: pointer;
+        }
+        .legend-item.inactive rect {
+            fill-opacity: 0.2;
+        }
+        .legend-item.inactive text {
+            opacity: 0.5;
+        }
+    </style>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div class="plot-container">
+        <svg id="figure1"></svg>
+        <svg id="figure2"></svg>
+    </div>
+    <ul id="selected-list"></ul>
+    <script>
+        let activeCountries = new Set(["USA", "Korea", "Japan", "Mexico", "Germany", "France", "Sweden"]);
+        let selectedData = new Set();
+
+        function updateBothGraphs() {
+            ["#figure1", "#figure2"].forEach(selector => {
+                const svg = d3.select(selector);
+                svg.selectAll(".dot")
+                    .style('display', d => activeCountries.has(d.Country) ? null : 'none');
+                
+                svg.selectAll(".legend-item")
+                    .classed('inactive', d => !activeCountries.has(d))
+                    .select('rect')
+                    .style('fill-opacity', d => activeCountries.has(d) ? null : '0.2');
+                
+                svg.selectAll(".legend-item")
+                    .select('text')
+                    .style('opacity', d => activeCountries.has(d) ? null : '0.5');
+            });
+        }
+
+        function updateSelectedPointsInBothGraphs() {
+            ["#figure1", "#figure2"].forEach(selector => {
+                d3.select(selector).selectAll(".dot")
+                    .classed('selected', (d) => selectedData.has(d));
+            });
+        }
+
+        function scatter_plot(data, svgSelector, { title = "", xCol = "", yCol = "", rCol = "", colorCol = "", margin = { top: 60, right: 180, bottom: 80, left: 80 } } = {}) {
+            const svg = d3.select(svgSelector);
+            svg.selectAll("*").remove();
+
+            const width = 800 - margin.left - margin.right;
+            const height = 660 - margin.top - margin.bottom;
+
+            const chart = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const xScale = d3.scaleLinear()
+                .domain(d3.extent(data, d => +d[xCol]))
+                .range([0, width])
+                .nice();
+
+            const yScale = d3.scaleLinear()
+                .domain(d3.extent(data, d => +d[yCol]))
+                .range([height, 0])
+                .nice();
+
+            const rScale = d3.scaleLinear()
+                .domain(d3.extent(data, d => +d[rCol]))
+                .range([3, 15]);
+
+            const colorScale = d3.scaleOrdinal()
+                .domain(activeCountries)
+                .range(["#1F77B4", "#FF7F0E", "#D62728", "#17BECF", "#2CA02C", "#FFD700", "#9467BD"]);
+
+            chart.append("g")
+                .attr("class", "x-axis")
+                .attr("transform", `translate(0,${height + 10})`)
+                .call(d3.axisBottom(xScale).ticks(5));
+
+            chart.append("g")
+                .attr("class", "y-axis")
+                .call(d3.axisLeft(yScale).ticks(5));
+
+            chart.append("text")
+                .attr("class", "axis-label")
+                .attr("x", width / 2)
+                .attr("y", height + 50)
+                .style("text-anchor", "middle")
+                .text(xCol);
+
+            chart.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height / 2)
+                .attr("y", -40)
+                .style("text-anchor", "middle")
+                .text(yCol);
+
+            svg.append("text")
+                .attr("class", "title")
+                .attr("x", (width + margin.left + margin.right) / 2)
+                .attr("y", 30)
+                .style("text-anchor", "middle")
+                .text(title);
+
+            const dots = chart.selectAll(".dot")
+                .data(data)
+                .enter().append("circle")
+                .attr("class", "dot")
+                .attr("cx", d => xScale(+d[xCol]))
+                .attr("cy", d => yScale(+d[yCol]))
+                .attr("r", d => rScale(+d[rCol]))
+                .attr("fill", d => colorScale(d[colorCol]))
+                .style("opacity", 0.7)
+                .on('click', function(event, d) {
+                    if (selectedData.has(d)) {
+                        selectedData.delete(d);
+                    } else {
+                        selectedData.add(d);
+                    }
+                    updateSelectedList(Array.from(selectedData));
+                    d3.select(this).classed('selected', selectedData.has(d));
+                    updateSelectedPointsInBothGraphs();
+                });
+
+            const legend = chart.append("g")
+                .attr("class", "legend")
+                .attr("transform", `translate(${width + 20}, ${margin.top})`);
+
+            const legendItems = legend.selectAll(".legend-item")
+                .data(colorScale.domain())
+                .enter().append("g")
+                .attr("class", "legend-item")
+                .attr("transform", (d, i) => `translate(0, ${i * 30})`)
+                .on("click", function(event, d) {
+                    if (activeCountries.has(d)) {
+                        activeCountries.delete(d);
+                    } else {
+                        activeCountries.add(d);
+                    }
+                    updateBothGraphs();
+                    updateSelectedPointsInBothGraphs();
+                });
+
+            legendItems.append("rect")
+                .attr("width", 20)
+                .attr("height", 20)
+                .attr("fill", colorScale);
+
+            legendItems.append("text")
+                .attr("x", 30)
+                .attr("y", 15)
+                .text(d => d);
+
+            if (svgSelector === "#figure1") {
+                const brush = d3.brush()
+                    .extent([[0, 0], [width, height]])
+                    .on("end", brushed);
+
+                chart.append("g")
+                    .attr("class", "brush")
+                    .call(brush);
+
+                function brushed(event) {
+                    if (!event.selection) {
+                        selectedData.clear();
+                    } else {
+                        const [[x0, y0], [x1, y1]] = event.selection;
+                        selectedData = new Set(data.filter(d => {
+                            const x = xScale(+d[xCol]);
+                            const y = yScale(+d[yCol]);
+                            return x >= x0 && x <= x1 && y >= y0 && y <= y1 && activeCountries.has(d[colorCol]);
+                        }));
+                    }
+                    updateSelectedPointsInBothGraphs();
+                    updateSelectedList(Array.from(selectedData));
+                }
+            }
+        }
+
+        function updateSelectedList(selectedDataArray) {
+            const selectedList = d3.select("#selected-list");
+            selectedList.selectAll("*").remove();
+            selectedDataArray.forEach(d => {
+                selectedList.append("li").text(`${d.Model} - ${d.Type}`);
+            });
+        }
+
+        d3.csv('./data/car_sample_data.csv').then(data => {
+            scatter_plot(data, '#figure1', {
+                title: 'MPG vs Price',
+                xCol: 'Price',
+                yCol: 'MPG',
+                rCol: 'Weight',
+                colorCol: 'Country'
+            });
+            scatter_plot(data, '#figure2', {
+                title: 'MPG vs Engine Size',
+                xCol: 'EngineSizeCI',
+                yCol: 'MPG',
+                rCol: 'Price',
+                colorCol: 'Country'
+            });
+            updateBothGraphs(); // Initial update to sync both graphs
+        });
+    </script>
+</body>
+</html>
